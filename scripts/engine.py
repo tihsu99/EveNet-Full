@@ -1276,6 +1276,16 @@ class EveNetEngine(L.LightningModule):
                     model=self.model, decay=self.ema_cfg.get("decay", 0.999)
                 )
 
+        for module_name in self.config.options.Training.get("freeze_modules", []):
+            module = getattr(self.model, module_name, None)
+            if module is None:
+                self.l.warning(f"[Model] --> Requested freeze for unknown module '{module_name}', skipping.")
+                continue
+            for param in module.parameters():
+                param.requires_grad = False
+            if self.global_rank == 0:
+                self.l.warning(f"[Model] --> Froze module: {module_name}")
+
         # Define Freezing
         # self.model.freeze_module("Classification", self.classification_cfg.get("freeze", {}))
         # self.model.freeze_module("Regression", self.regression_cfg.get("freeze", {}))
@@ -1454,9 +1464,16 @@ class EveNetEngine(L.LightningModule):
         def filter_trainable(params):
             return [p for p in params if p.requires_grad]
 
+        shared_modules = [
+            self.model.PET,
+            self.model.GlobalEmbedding,
+        ]
+        grouped_module = getattr(self.model, "GroupedSequentialEmbedding", None)
+        if grouped_module is not None:
+            shared_modules.append(grouped_module)
+
         shared_params = filter_trainable(
-            list(self.model.PET.parameters()) +
-            list(self.model.GlobalEmbedding.parameters())
+            [param for module in shared_modules for param in module.parameters()]
         )
 
         task_param_sets = []
