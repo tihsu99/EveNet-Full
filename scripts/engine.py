@@ -26,6 +26,7 @@ from evenet.network.metrics.assignment import shared_step as ass_step, shared_ep
 from evenet.network.metrics.assignment import SingleProcessAssignmentMetrics
 from evenet.network.metrics.generation import GenerationMetrics
 from evenet.network.metrics.generation import shared_step as gen_step, shared_epoch_end as gen_end
+from evenet.network.metrics.object_tag_embedding import ObjectTagEmbeddingLogger
 from evenet.network.metrics.segmentation import SegmentationMetrics
 from evenet.network.metrics.segmentation import shared_step as seg_step, shared_epoch_end as seg_end
 from evenet.network.loss.famo import FAMO
@@ -228,6 +229,9 @@ class EveNetEngine(L.LightningModule):
 
         ###### For general log ######
         self.general_log = GenericMetrics()
+        self.object_tag_embedding_logger = ObjectTagEmbeddingLogger(
+            self.config.options.get("Metrics", {}).get("ObjectTag-Embedding", {})
+        )
         self.log_gradient_step = global_config.options.Training.get("log_gradient_step", 100)
         self.simplified_log: bool = global_config.get('logger', {}).get("wandb", {}).get("simplified", False)
         self.local_logger: Union[None, LocalLogger] = None
@@ -717,6 +721,8 @@ class EveNetEngine(L.LightningModule):
             loss_head_dict=loss_head,
             update_metric=self.eval_metrics,
         )
+        if self.eval_metrics:
+            self.object_tag_embedding_logger.update(model=self.model, batch=batch)
 
         return loss.mean()
 
@@ -1088,6 +1094,12 @@ class EveNetEngine(L.LightningModule):
                 metrics_train=self.segmentation_metrics_train,
                 logger=self.logger.experiment
             )
+
+        self.object_tag_embedding_logger.log(
+            loggers=self.loggers,
+            epoch=self.current_epoch,
+            global_rank=self.global_rank,
+        )
 
         self.general_log.finalize_epoch(is_train=False)
 
