@@ -250,7 +250,7 @@ def process_dict(
         w = weights.reshape(-1, 1)
 
         # ==> CLASSIFICATION
-        if len(unique_process_ids) > 0:
+        if len(unique_process_ids) > 0 and "classification" in pdict:
             class_counts = np.bincount(pdict['classification'], weights=weights)
             unweighted_class_counts = np.bincount(pdict['classification'])
 
