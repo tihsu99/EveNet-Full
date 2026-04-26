@@ -19,7 +19,7 @@ from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, Learning
 from lightning.pytorch.profilers import PyTorchProfiler
 
 from evenet.control.global_config import global_config
-from scripts.shared import make_process_fn, prepare_datasets, EveNetTrainCallback
+from scripts.shared import make_process_fn, prepare_datasets, EveNetTrainCallback, ProgressiveEarlyStoppingReset
 from scripts.engine import EveNetEngine
 from evenet.utilities.logger import LocalLogger, setup_logging
 
@@ -109,6 +109,7 @@ def train_func(cfg):
         callbacks=[
             EveNetTrainCallback(),
             checkpoint_callback,
+            ProgressiveEarlyStoppingReset(),
             early_stop_callback,
             LearningRateMonitor(),
             RichModelSummary(max_depth=3),
