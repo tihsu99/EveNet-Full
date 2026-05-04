@@ -251,8 +251,15 @@ def process_dict(
 
         # ==> CLASSIFICATION
         if len(unique_process_ids) > 0 and "classification" in pdict:
-            class_counts = np.bincount(pdict['classification'], weights=weights)
-            unweighted_class_counts = np.bincount(pdict['classification'])
+            class_counts = np.bincount(
+                pdict['classification'],
+                weights=weights,
+                minlength=len(unique_process_ids),
+            )
+            unweighted_class_counts = np.bincount(
+                pdict['classification'],
+                minlength=len(unique_process_ids),
+            )
 
             lines = [
                 "===============================================",
