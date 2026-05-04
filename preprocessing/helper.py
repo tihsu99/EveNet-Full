@@ -357,7 +357,22 @@ def process_dict(
     if shape_metadata is None:
         shape_metadata = meta
     else:
-        assert shape_metadata == meta, "Shape metadata mismatch."
+        if shape_metadata != meta:
+            reference_keys = set(shape_metadata)
+            current_keys = set(meta)
+            missing = sorted(reference_keys - current_keys)
+            extra = sorted(current_keys - reference_keys)
+            changed = sorted(
+                key
+                for key in reference_keys & current_keys
+                if shape_metadata[key] != meta[key]
+            )
+            details = [
+                f"missing_keys={missing[:20]}",
+                f"extra_keys={extra[:20]}",
+                f"changed_shapes={[(key, shape_metadata[key], meta[key]) for key in changed[:20]]}",
+            ]
+            raise AssertionError("Shape metadata mismatch. " + "; ".join(details))
 
     return shape_metadata
 
